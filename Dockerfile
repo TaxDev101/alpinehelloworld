@@ -1,25 +1,27 @@
-#Grab the latest alpine image
-FROM alpine:latest
+# Utilisez une image de base Python optimisée
+FROM python:3.9-slim-buster
 
-# Install python and pip
-RUN apk add --no-cache --update python3 py3-pip bash
-ADD ./webapp/requirements.txt /tmp/requirements.txt
+# Définissez le répertoire de travail dans le conteneur
+WORKDIR /app
 
-# Install dependencies
-RUN pip3 install --no-cache-dir -q -r /tmp/requirements.txt
+# Créez un environnement virtuel pour isoler les dépendances
+RUN python3 -m venv /app/venv
 
-# Add our code
-ADD ./webapp /opt/webapp/
-WORKDIR /opt/webapp
+# Activez l'environnement virtuel (pour les commandes suivantes)
+ENV PATH="/app/venv/bin:$PATH"
 
-# Expose is NOT supported by Heroku
-# EXPOSE 5000 		
+# Copiez le fichier requirements.txt dans le conteneur
+COPY requirements.txt requirements.txt
 
-# Run the image as a non-root user
-RUN adduser -D myuser
-USER myuser
+# Installez les dépendances   
+ dans l'environnement virtuel
+RUN /app/venv/bin/pip install -r requirements.txt
 
-# Run the app.  CMD is required to run on Heroku
-# $PORT is set by Heroku			
-CMD gunicorn --bind 0.0.0.0:$PORT wsgi 
+# Copiez votre application dans le conteneur
+COPY ./webapp /app
 
+# Exposez le port si nécessaire (ajustez selon votre application)
+EXPOSE 5000
+
+# Commande à exécuter lors du démarrage du conteneur (ajustez selon votre application)
+CMD ["/app/venv/bin/gunicorn", "--bind", "0.0.0.0:$PORT", "wsgi"]
